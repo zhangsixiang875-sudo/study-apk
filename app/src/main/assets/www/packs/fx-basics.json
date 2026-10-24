@@ -1,0 +1,40 @@
+{
+  "id": "fx-basics",
+  "title": "FX 基础",
+  "version": 1,
+  "note": "模板型内容：题目由模板 + 随机参数生成，每次数字不同。",
+  "courses": [
+    {
+      "id": "m1",
+      "title": "M1 方向与相对强弱",
+      "desc": "买卖方向 · 两条腿 · 交叉汇率 · 美元敞口",
+      "units": [
+        { "id": "direction", "title": "买卖方向", "template": "fx.direction" },
+        { "id": "rotate", "title": "两条腿", "template": "fx.rotate" },
+        { "id": "cross", "title": "交叉汇率一致性", "template": "fx.cross" },
+        { "id": "exposure", "title": "美元敞口", "template": "fx.exposure" }
+      ]
+    },
+    {
+      "id": "m2",
+      "title": "M2 Bid/Ask 与完整盈亏",
+      "desc": "双边报价 · 点差只算一次",
+      "units": [
+        { "id": "long_rt", "title": "多头往返", "template": "fx.long_roundtrip" },
+        { "id": "short_rt", "title": "空头往返", "template": "fx.short_roundtrip" },
+        { "id": "spread", "title": "点差成本", "template": "fx.spread_cost" }
+      ]
+    },
+    {
+      "id": "m3",
+      "title": "M3 账户动态与强平",
+      "desc": "净值 · 保证金水平 · 强平距离 · 实际杠杆",
+      "units": [
+        { "id": "equity", "title": "净值", "template": "fx.equity" },
+        { "id": "margin_level", "title": "保证金水平", "template": "fx.margin_level" },
+        { "id": "stopout", "title": "强平距离", "template": "fx.stopout" },
+        { "id": "eff_lev", "title": "实际杠杆", "template": "fx.eff_lev" }
+      ]
+    }
+  ]
+}

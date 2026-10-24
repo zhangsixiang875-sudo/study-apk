@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A0D12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>学习台</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0A0D12; --surface:#131822; --surface2:#1A2130; --line:#232C3B;
+    --text:#E8EEF7; --muted:#8A97AC; --brand:#38BDF8; --brand2:#818CF8;
+    --ok:#4ADE80; --bad:#F87171; --warn:#FBBF24; --r:18px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{margin:0; background:var(--bg); color:var(--text);
+    font:15px/1.55 -apple-system,"Segoe UI",Roboto,"Noto Sans SC","PingFang SC",sans-serif;
+    touch-action:manipulation; overscroll-behavior:none;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);}
+  .app{max-width:560px; margin:0 auto; min-height:100%; display:flex; flex-direction:column;}
+  .screen{display:none; flex:1; flex-direction:column; padding:16px 16px 0;}
+  .screen.on{display:flex; animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+  h1{font-size:22px; margin:0 0 2px;}
+  .sub{color:var(--muted); font-size:13px; margin:0 0 16px;}
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); padding:16px; margin-bottom:12px;}
+  .row{display:flex; align-items:center; gap:12px;}
+  .grow{flex:1; min-width:0;}
+  .muted{color:var(--muted);}
+  .small{font-size:12.5px;}
+  .mono{font-variant-numeric:tabular-nums;}
+
+  .tap{cursor:pointer; transition:transform .12s ease, border-color .12s ease;}
+  .tap:active{transform:scale(.985); border-color:#31405a;}
+  .tap h3{margin:0; font-size:16px; font-weight:600;}
+  .meta{color:var(--muted); font-size:12.5px; margin-top:3px;}
+  .bar{height:6px; background:var(--surface2); border-radius:99px; overflow:hidden; margin-top:10px;}
+  .bar>i{display:block; height:100%; background:linear-gradient(90deg,var(--brand),var(--brand2)); border-radius:99px; transition:width .3s;}
+  .badge{font-size:11.5px; padding:3px 9px; border-radius:99px; border:1px solid var(--line); color:var(--muted); white-space:nowrap;}
+  .badge.hot{color:#0A0D12; background:var(--warn); border-color:transparent; font-weight:700;}
+  .badge.done{color:var(--ok); border-color:rgba(74,222,128,.35);}
+
+  .top{display:flex; align-items:center; gap:10px; padding:6px 0 12px;}
+  .iconbtn{width:38px; height:38px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--text); font-size:18px; display:grid; place-items:center; flex:none;}
+  .iconbtn:active{background:var(--surface2);}
+  .prog{flex:1; height:6px; background:var(--surface2); border-radius:99px; overflow:hidden;}
+  .prog>i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--brand),var(--brand2)); transition:width .25s;}
+  .cid{font-size:11.5px; color:var(--muted); letter-spacing:.3px;}
+
+  details.assume{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 12px; margin-bottom:12px;}
+  details.assume summary{cursor:pointer; color:var(--muted); font-size:12.5px; list-style:none;}
+  details.assume summary::-webkit-details-marker{display:none;}
+  details.assume summary::before{content:"▸ "; color:var(--brand);}
+  details.assume[open] summary::before{content:"▾ ";}
+  details.assume .kv{display:flex; justify-content:space-between; gap:12px; font-size:12.5px; padding:5px 0; border-bottom:1px dashed rgba(255,255,255,.05);}
+  details.assume .kv:last-child{border-bottom:0;}
+  details.assume .kv b{font-weight:500; color:var(--text); text-align:right;}
+
+  .q{font-size:17px; line-height:1.5; margin:2px 0 16px; white-space:pre-wrap;}
+  .opt{display:flex; align-items:center; gap:12px; padding:14px; border:1px solid var(--line); background:var(--surface); border-radius:14px; margin-bottom:10px; transition:.12s;}
+  .opt:active{transform:scale(.99); background:var(--surface2);}
+  .opt .n{width:24px; height:24px; border-radius:8px; background:var(--surface2); display:grid; place-items:center; font-size:12px; color:var(--muted); flex:none;}
+  .opt.sel{border-color:var(--brand); background:rgba(56,189,248,.08);}
+  .opt.sel .n{background:var(--brand); color:#001018; font-weight:700;}
+  .opt.right{border-color:var(--ok); background:rgba(74,222,128,.10);}
+  .opt.wrong{border-color:var(--bad); background:rgba(248,113,113,.10);}
+
+  .answerbox{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px 16px; text-align:right; font-size:30px; font-weight:600; min-height:70px; display:flex; align-items:center; justify-content:flex-end;}
+  .answerbox.empty{color:#3E4A5F; font-weight:400; font-size:20px;}
+  .unit{color:var(--muted); font-size:13px; margin:8px 2px 0; text-align:right;}
+
+  .pad{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:14px 0 10px;}
+  .key{height:52px; border-radius:14px; border:1px solid var(--line); background:var(--surface); color:var(--text); font-size:20px; display:grid; place-items:center;}
+  .key:active{background:var(--surface2); transform:scale(.98);}
+  .key.fn{color:var(--muted); font-size:15px;}
+
+  .btn{height:54px; border-radius:16px; border:0; width:100%; font-size:16px; font-weight:600; color:#04121A; background:linear-gradient(135deg,var(--brand),var(--brand2));}
+  .btn:disabled{opacity:.28; filter:saturate(.25);}
+  .btn.ghost{background:var(--surface); color:var(--text); border:1px solid var(--line); font-weight:500;}
+  .btn:active{transform:scale(.99);}
+  .footer{padding:8px 0 18px; margin-top:auto; position:sticky; bottom:0; background:linear-gradient(180deg,transparent,var(--bg) 30%);}
+
+  .fb{border-radius:16px; padding:14px; margin:0 0 12px; border:1px solid var(--line);}
+  .fb.ok{background:rgba(74,222,128,.08); border-color:rgba(74,222,128,.35);}
+  .fb.bad{background:rgba(248,113,113,.08); border-color:rgba(248,113,113,.35);}
+  .fb h4{margin:0 0 6px; font-size:15px;}
+  .fb .cause{display:inline-block; font-size:12px; padding:2px 8px; border-radius:99px; background:rgba(251,191,36,.15); color:var(--warn); margin-bottom:8px;}
+  .fb .exp{white-space:pre-wrap; font-size:13.5px; color:#CBD5E1;}
+
+  .sheet{position:fixed; left:0; right:0; bottom:0; background:#0F141D; border-top:1px solid var(--line);
+    border-radius:22px 22px 0 0; padding:16px 16px calc(18px + env(safe-area-inset-bottom));
+    transform:translateY(105%); transition:transform .22s ease; z-index:40; max-width:560px; margin:0 auto;}
+  .sheet.on{transform:none;}
+  .sheet .grab{width:38px; height:4px; border-radius:99px; background:#2A3444; margin:0 auto 12px;}
+
+  .unitrow{display:flex; align-items:center; gap:12px; padding:14px 0; border-bottom:1px solid var(--line);}
+  .unitrow:last-child{border-bottom:0;}
+  .unitrow .t{font-size:14.5px;}
+  .unitrow .s{font-size:12px; color:var(--muted); margin-top:2px;}
+  .tag{font-size:11px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); color:var(--muted); white-space:nowrap;}
+  .tag.hot{color:var(--warn); border-color:rgba(251,191,36,.4);}
+  .tag.ok{color:var(--ok); border-color:rgba(74,222,128,.35);}
+
+  .ring{width:104px; height:104px; margin:6px auto 12px; position:relative;}
+  .ring .pct{position:absolute; inset:0; display:grid; place-items:center; font-size:24px; font-weight:700;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= 目录 ================= -->
+  <section class="screen on" id="s-catalog">
+    <h1>学习台</h1>
+    <p class="sub" id="catSub">—</p>
+    <div id="reviewCard"></div>
+    <div id="courseList"></div>
+    <div class="card tap" onclick="UI.go('s-packs')">
+      <div class="row"><div class="grow"><h3>内容包</h3><div class="meta" id="packMeta">—</div></div><span class="badge">›</span></div>
+    </div>
+    <div class="card tap" onclick="UI.go('s-stats')">
+      <div class="row"><div class="grow"><h3>学习记录</h3><div class="meta">正确率 · 错因 · 复习日程</div></div><span class="badge">›</span></div>
+    </div>
+    <div class="footer"></div>
+  </section>
+
+  <!-- ================= 课程 ================= -->
+  <section class="screen" id="s-course">
+    <div class="top">
+      <button class="iconbtn" onclick="UI.go('s-catalog')">←</button>
+      <div class="grow"><h1 style="font-size:18px;margin:0" id="courseTitle">—</h1></div>
+    </div>
+    <p class="sub" id="courseDesc"></p>
+    <div class="card" id="unitList"></div>
+    <div class="footer"><button class="btn" onclick="UI.startCourse()">开始整课</button></div>
+  </section>
+
+  <!-- ================= 做题 ================= -->
+  <section class="screen" id="s-quiz">
+    <div class="top">
+      <button class="iconbtn" onclick="UI.quit()">←</button>
+      <div class="grow"><div class="prog"><i id="quizBar"></i></div></div>
+      <span class="cid mono" id="quizCount">1/1</span>
+    </div>
+    <div class="cid" id="quizCid" style="margin-bottom:8px"></div>
+    <details class="assume" id="assumeBox"><summary>本题假设</summary><div id="assumeBody"></div></details>
+    <div class="q" id="quizPrompt"></div>
+    <div id="choiceArea"></div>
+    <div id="numArea" style="display:none">
+      <div class="answerbox empty" id="answerBox">输入答案</div>
+      <div class="unit" id="answerUnit"></div>
+      <div class="pad">
+        <div class="key" onclick="UI.key('7')">7</div><div class="key" onclick="UI.key('8')">8</div><div class="key" onclick="UI.key('9')">9</div>
+        <div class="key" onclick="UI.key('4')">4</div><div class="key" onclick="UI.key('5')">5</div><div class="key" onclick="UI.key('6')">6</div>
+        <div class="key" onclick="UI.key('1')">1</div><div class="key" onclick="UI.key('2')">2</div><div class="key" onclick="UI.key('3')">3</div>
+        <div class="key fn" onclick="UI.key('-')">±</div><div class="key" onclick="UI.key('0')">0</div><div class="key fn" onclick="UI.key('.')">.</div>
+        <div class="key fn" style="grid-column:span 2" onclick="UI.key('back')">⌫</div><div class="key fn" onclick="UI.clear()">清空</div>
+      </div>
+    </div>
+    <div class="footer"><button class="btn" id="submitBtn" onclick="UI.submit()" disabled>提交</button></div>
+  </section>
+
+  <!-- ================= 结果 ================= -->
+  <section class="screen" id="s-done">
+    <h1 id="doneTitle">完成</h1>
+    <p class="sub" id="doneSub"></p>
+    <div class="ring">
+      <svg width="104" height="104">
+        <circle cx="52" cy="52" r="44" fill="none" stroke="#1E2735" stroke-width="10"/>
+        <circle id="ringFg" cx="52" cy="52" r="44" fill="none" stroke="url(#g)" stroke-width="10" stroke-linecap="round" stroke-dasharray="276" stroke-dashoffset="276"/>
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#38BDF8"/><stop offset="1" stop-color="#818CF8"/></linearGradient></defs>
+      </svg>
+      <div class="pct" id="ringPct">0%</div>
+    </div>
+    <div class="card" id="doneBody"></div>
+    <div class="footer">
+      <button class="btn" id="againBtn">再练一次（新数字）</button>
+      <div style="height:10px"></div>
+      <button class="btn ghost" onclick="UI.go('s-catalog')">回目录</button>
+    </div>
+  </section>
+
+  <!-- ================= 记录 ================= -->
+  <section class="screen" id="s-stats">
+    <div class="top">
+      <button class="iconbtn" onclick="UI.go('s-catalog')">←</button>
+      <div class="grow"><h1 style="font-size:18px;margin:0">学习记录</h1></div>
+    </div>
+    <div class="card" id="statsSummary"></div>
+    <div class="card" id="statsList"></div>
+    <div style="height:20px"></div>
+  </section>
+
+  <!-- ================= 内容包 ================= -->
+  <section class="screen" id="s-packs">
+    <div class="top">
+      <button class="iconbtn" onclick="UI.go('s-catalog')">←</button>
+      <div class="grow"><h1 style="font-size:18px;margin:0">内容包</h1></div>
+    </div>
+    <div class="card" id="packList"></div>
+    <div class="card">
+      <div class="row" style="gap:10px">
+        <button class="btn ghost" style="height:44px" onclick="document.getElementById('pk').click()">导入内容包</button>
+        <button class="btn ghost" style="height:44px" onclick="UI.exportAll()">导出记录</button>
+      </div>
+      <input type="file" id="pk" accept="application/json,.json" style="display:none" onchange="UI.importPack(this)">
+      <div class="small muted" style="margin-top:10px">导入的内容包存在手机本地，随时可删。</div>
+    </div>
+    <div class="card">
+      <div class="row"><div class="grow"><b style="font-size:14px">公式自检</b>
+        <div class="small muted">用 Python 生成的 42 组标准答案复算</div></div>
+        <button class="btn ghost" style="width:auto;height:40px;padding:0 16px" onclick="UI.selfTest()">运行</button></div>
+      <div class="small mono" id="stOut" style="margin-top:10px;color:var(--muted)"></div>
+    </div>
+    <div style="height:20px"></div>
+  </section>
+
+  <div class="sheet" id="sheet">
+    <div class="grab"></div>
+    <div class="fb" id="fbBox">
+      <h4 id="fbTitle"></h4>
+      <div class="cause" id="fbCause" style="display:none"></div>
+      <div class="exp" id="fbExp"></div>
+    </div>
+    <button class="btn" id="nextBtn" onclick="UI.next()">下一题</button>
+  </div>
+</div>
+
+<script id="core">
+/* ==== CORE START ==== */
+const GOLDEN = {"fx.long_roundtrip":[{"p":{"bid0":1.083,"ask0":1.0832,"bid1":1.087,"ask1":1.0872},"a":38.0},{"p":{"bid0":1.0873,"ask0":1.0876,"bid1":1.0953,"ask1":1.0956},"a":77.0},{"p":{"bid0":1.0709,"ask0":1.0711,"bid1":1.0739,"ask1":1.0741},"a":28.0},{"p":{"bid0":1.1094,"ask0":1.1096,"bid1":1.1144,"ask1":1.1146},"a":48.0},{"p":{"bid0":1.0846,"ask0":1.0848,"bid1":1.0926,"ask1":1.0928},"a":78.0},{"p":{"bid0":1.0986,"ask0":1.0988,"bid1":1.1036,"ask1":1.1038},"a":48.0}],"fx.short_roundtrip":[{"p":{"bid0":1.0902,"ask0":1.0904,"bid1":1.0872,"ask1":1.0874,"lots":0.1},"a":28.0},{"p":{"bid0":1.1106,"ask0":1.1108,"bid1":1.1076,"ask1":1.1078,"lots":0.2},"a":56.0},{"p":{"bid0":1.1178,"ask0":1.118,"bid1":1.1198,"ask1":1.12,"lots":0.2},"a":-44.0},{"p":{"bid0":1.0904,"ask0":1.0906,"bid1":1.0924,"ask1":1.0926,"lots":0.1},"a":-22.0},{"p":{"bid0":1.072,"ask0":1.0722,"bid1":1.07,"ask1":1.0702,"lots":0.5},"a":90.0},{"p":{"bid0":1.0826,"ask0":1.0828,"bid1":1.0796,"ask1":1.0797,"lots":0.5},"a":145.0}],"fx.spread_cost":[{"p":{"spread":1.5,"lots":0.2},"a":3.0},{"p":{"spread":1.5,"lots":0.5},"a":7.5},{"p":{"spread":1.0,"lots":0.5},"a":5.0},{"p":{"spread":2.0,"lots":0.5},"a":10.0},{"p":{"spread":1.5,"lots":0.2},"a":3.0},{"p":{"spread":1.0,"lots":0.2},"a":2.0}],"fx.equity":[{"p":{"bal":500,"float":-200},"a":300},{"p":{"bal":2000,"float":120},"a":2120},{"p":{"bal":1000,"float":120},"a":1120},{"p":{"bal":500,"float":120},"a":620},{"p":{"bal":1000,"float":-200},"a":800},{"p":{"bal":1000,"float":-200},"a":800}],"fx.margin_level":[{"p":{"lots":0.5,"lev":100,"price":1.1,"bal":1000,"float":-36.47},"a":175.1873},{"p":{"lots":0.5,"lev":200,"price":1.1,"bal":500,"float":-46.94},"a":164.7491},{"p":{"lots":0.2,"lev":200,"price":1.1,"bal":2000,"float":-42.63},"a":1779.4273},{"p":{"lots":0.5,"lev":100,"price":1.1,"bal":2000,"float":-38.93},"a":356.5582},{"p":{"lots":0.1,"lev":200,"price":1.1,"bal":1000,"float":-45.55},"a":1735.3636},{"p":{"lots":0.5,"lev":200,"price":1.1,"bal":500,"float":-69.37},"a":156.5927}],"fx.stopout":[{"p":{"lots":0.1,"lev":100,"price":1.1,"bal":2000,"stop":40},"a":1956.0},{"p":{"lots":0.5,"lev":100,"price":1.1,"bal":1000,"stop":50},"a":145.0},{"p":{"lots":0.1,"lev":500,"price":1.1,"bal":500,"stop":30},"a":493.4},{"p":{"lots":0.2,"lev":200,"price":1.1,"bal":500,"stop":40},"a":228.0},{"p":{"lots":0.2,"lev":100,"price":1.1,"bal":2000,"stop":30},"a":967.0},{"p":{"lots":0.1,"lev":200,"price":1.1,"bal":500,"stop":40},"a":478.0}],"fx.eff_lev":[{"p":{"lots":1.0,"lev":500,"price":1.1,"bal":2000,"float":-3.62},"a":55.0997},{"p":{"lots":2.0,"lev":500,"price":1.1,"bal":2000,"float":-97.32},"a":115.6264},{"p":{"lots":1.0,"lev":500,"price":1.1,"bal":1000,"float":-3.17},"a":110.3498},{"p":{"lots":2.0,"lev":500,"price":1.1,"bal":2000,"float":-5.09},"a":110.2807},{"p":{"lots":1.0,"lev":500,"price":1.1,"bal":1000,"float":-77.13},"a":119.1934},{"p":{"lots":0.5,"lev":500,"price":1.1,"bal":1000,"float":-56.52},"a":58.2948}]};
+
+/* ---------- 工具 ---------- */
+function RNG(seed){ let a=seed>>>0; return function(){ a|=0; a=a+0x6D2B79F5|0;
+  let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t;
+  return ((t^t>>>14)>>>0)/4294967296; };}
+const pick=(r,a)=>a[Math.floor(r()*a.length)];
+const rnd=(r,lo,hi)=>lo+r()*(hi-lo);
+const r2=(x,n)=>Math.round(x*Math.pow(10,n))/Math.pow(10,n);
+const f4=x=>x.toFixed(4), f5=x=>x.toFixed(5);
+const money=x=>(x<0?"−$":"$")+Math.abs(x).toFixed(2);
+
+function assume(extra){
+  const base=[["账户币种","USD"],["合约乘数","100,000/手"],["手数步长","0.01（最小 0.01）"],
+    ["佣金","往返 0.00/手"],["隔夜费","忽略（当日平仓）"],["滑点","忽略"],["报价时点","同一时点的双边报价"]];
+  return extra ? base.concat([["补充",extra]]) : base;
+}
+
+const ROTATE_ACTIONS=["买入 USD/JPY","卖出 USD/JPY","买入 USD/CHF","卖出 USD/CHF"];
+function legs(action){
+  const parts=action.split(" "); const side=parts[0], pair=parts[1];
+  const body=pair.replace("/","");
+  const base=body.slice(0,3), quote=body.slice(3); const lng=(side==="买入");
+  return [(lng?"多":"空")+base,(lng?"空":"多")+quote];
+}
+
+/* ---------- 公式（与 Python 一致，golden 校验） ---------- */
+const SOLVE={
+  "fx.long_roundtrip": p=>(p.bid1-p.ask0)/0.0001,
+  "fx.short_roundtrip": p=>(p.bid0-p.ask1)*p.lots*100000,
+  "fx.spread_cost": p=>p.spread*p.lots*10,
+  "fx.equity": p=>p.bal+p.float,
+  "fx.margin_level": p=>(p.bal+p.float)/(p.lots*100000*p.price/p.lev)*100,
+  "fx.stopout": p=>(p.bal-(p.lots*100000*p.price/p.lev)*p.stop/100)/(p.lots*10),
+  "fx.eff_lev": p=>(p.lots*100000*p.price)/(p.bal+p.float)
+};
+
+/* ---------- 题目模板库 ---------- */
+const TEMPLATES={
+
+"fx.direction": r=>{
+  const pair=pick(r,["EURUSD","GBPUSD","USDJPY","USDCHF","AUDUSD","USDCAD"]);
+  const base=pair.slice(0,3), quote=pair.slice(3), side=pick(r,["买入","卖出"]);
+  const lng=(side==="买入");
+  const truth=lng?("多 "+base+"、空 "+quote):("空 "+base+"、多 "+quote);
+  const options=["多 "+base+"、空 "+quote,"空 "+base+"、多 "+quote,"只是换汇，没有方向"];
+  return {kind:"choice",prompt:pair+" 上你"+side+" 1 手。你同时持有什么货币头寸？",options,
+    answer:options.indexOf(truth),
+    assume:assume("品种 "+pair+"（基础货币 "+base+"，报价货币 "+quote+"）"),
+    explain:"报价 BASE/QUOTE 表示 1 单位 "+base+" 值多少 "+quote+"。\n"
+      +side+"这个品种，就是"+(lng?"买入":"卖出")+base+"、同时"+(lng?"卖出":"买入")+quote+"。\n所以是「"+truth+"」。"};
+},
+
+"fx.rotate": r=>{
+  const bull=r()<0.5;
+  const want=bull?["多USD","空CHF"]:["空USD","多JPY"];
+  const view=bull?"看多美元、同时看空瑞郎":"看空美元、同时看多日元";
+  const truth=ROTATE_ACTIONS.filter(a=>{const l=legs(a);
+    return (l[0]===want[0]&&l[1]===want[1])||(l[1]===want[0]&&l[0]===want[1]);})[0];
+  const t=legs(truth);
+  let exp=truth+" 拆开就是「"+t[0]+"、"+t[1]+"」，两条腿都对上。\n";
+  for(const a of ROTATE_ACTIONS){
+    if(a===truth) continue;
+    const l=legs(a), hit=l.filter(x=>want.includes(x)).length;
+    const v=hit===0?"两条腿都和题目相反":hit===1?"只对上一条腿，另一条相反":"两条腿都对上";
+    exp+=a+" 拆开是「"+l[0]+"、"+l[1]+"」—— "+v+"，所以不对。\n";
+  }
+  exp+="注意 USD/JPY 与 USD/CHF 里美元都在【前面】，方向由买/卖决定，不是由品种决定。";
+  return {kind:"choice",prompt:"你的观点是："+view+"。\n在下面四个动作里选一个【同时满足两条腿】的：",
+    options:ROTATE_ACTIONS.slice(),answer:ROTATE_ACTIONS.indexOf(truth),
+    assume:assume("每题只选一个；必须同时满足题目给出的两条腿"),explain:exp};
+},
+
+"fx.cross": r=>{
+  const e0=r2(rnd(r,1.05,1.15),2), j0=r2(rnd(r,140,160),1);
+  const dE=pick(r,[1,2,-1,-2]), dC=pick(r,[-1,-2,1,2]);
+  const e1=e0*(1+dE/100), c0=e0*j0, c1=c0*(1+dC/100), j1=c1/e1, dJ=(j1/j0-1)*100;
+  const contra=(dE>0&&dC<0)||(dE<0&&dC>0);
+  const options=contra
+    ?["矛盾：两个报价必须同向","不矛盾：USD/JPY 的变动比 EUR/USD 更大","不矛盾：EUR/JPY 与 EUR/USD 没有关系"]
+    :["矛盾：两个报价必须反向","不矛盾：两者同向是正常的","不矛盾：EUR/JPY 与 EUR/USD 没有关系"];
+  const word=dJ>0?"涨":"跌";
+  const sign=(x)=>x>0?"+":"";
+  const exp="EUR/JPY = EUR/USD × USD/JPY = "+f5(e0)+" × "+j0+" = "+c0.toFixed(2)+"。\n"
+   +"EUR/USD 变 "+sign(dE)+dE+"% 到 "+f4(e1)+"，EUR/JPY 变 "+sign(dC)+dC+"% 到 "+c1.toFixed(2)+"，\n"
+   +"于是 USD/JPY = "+c1.toFixed(2)+" / "+f4(e1)+" = "+j1.toFixed(2)+"，即 "+sign(dJ)+dJ.toFixed(1)+"%。\n"
+   +"近似关系：EUR/JPY 的变化 ≈ EUR/USD 的变化 + USD/JPY 的变化。"+sign(dC)+dC+"% 里 EUR/USD 只贡献 "+sign(dE)+dE+"%，"
+   +"剩下必须由 USD/JPY 提供 —— 它"+word+"了 "+Math.abs(dJ).toFixed(1)+"%。\n"
+   +"所以不是矛盾，是三个报价互相约束。这也说明：只看一个货币对判断强弱是不够的。";
+  return {kind:"choice",prompt:"EUR/USD = "+f5(e0)+"，USD/JPY = "+j0+"。\n现在 EUR/USD 变 "+sign(dE)+dE+"%，EUR/JPY 变 "+sign(dC)+dC+"%。这矛盾吗？",
+    options,answer:1,assume:assume("用同一时点的两个报价做交叉汇率推导"),explain:exp};
+},
+
+"fx.exposure": r=>{
+  const bearish=r()<0.5;
+  const a1=bearish?"买入 EUR/USD":"卖出 GBP/USD", a2=bearish?"卖出 USD/JPY":"买入 USD/CHF";
+  const detail=bearish
+    ?"买入 EUR/USD：多欧元、空美元。卖出 USD/JPY：空美元、多日元。两笔都在空美元。"
+    :"卖出 GBP/USD：空英镑、多美元。买入 USD/CHF：多美元、空瑞郎。两笔都在多美元。";
+  return {kind:"choice",prompt:a1+" 同时 "+a2+"。你对美元的总敞口是？",
+    options:["多美元（两笔叠加）","空美元（两笔叠加）","完全对冲，美元风险为 0"],
+    answer:bearish?1:0,assume:assume("只判断美元敞口方向，不考虑手数大小"),
+    explain:detail+"\n所以美元敞口是【叠加】的，不是分散的。品种不同不代表风险方向不同。"};
+},
+
+"fx.long_roundtrip": r=>{
+  const spread=pick(r,[0.8,1.0,1.5,2.0,2.5]);
+  const ask0=r2(rnd(r,1.07,1.12),4), bid0=r2(ask0-spread/1e4,4);
+  const ask1=r2(ask0+pick(r,[30,40,50,60,80])/1e4,4), bid1=r2(ask1-spread/1e4,4);
+  const p={bid0:bid0,ask0:ask0,bid1:bid1,ask1:ask1};
+  const ans=SOLVE["fx.long_roundtrip"](p), naive=(ask1-ask0)/0.0001;
+  return {kind:"number",dp:1,unit:"pip",answer:ans,
+    prompt:"EURUSD 入场报价 Bid "+f4(bid0)+" / Ask "+f4(ask0)+"，出场报价 Bid "+f4(bid1)+" / Ask "+f4(ask1)+"。\n你做多 1 手（100,000），忽略佣金，净赚/亏多少个 pip？",
+    assume:assume("多头：以 Ask 买入、以 Bid 卖出；点差只算一次"),
+    explain:"多头入场付 Ask "+f4(ask0)+"，出场收 Bid "+f4(bid1)+"。\n("+f4(bid1)+" − "+f4(ask0)+") ÷ 0.0001 = "+ans.toFixed(1)+" pip。\n点差已经在 Bid/Ask 里，不要再单独扣一次。",
+    causes:{[r2(naive,1)]:"成本漏算"}};
+},
+
+"fx.short_roundtrip": r=>{
+  const lots=pick(r,[0.1,0.2,0.5]), spread=pick(r,[1.0,1.5,2.0]);
+  const bid0=r2(rnd(r,1.07,1.12),4), ask0=r2(bid0+spread/1e4,4);
+  const bid1=r2(bid0+pick(r,[-20,-30,20,30])/1e4,4), ask1=r2(bid1+spread/1e4,4);
+  const p={bid0:bid0,ask0:ask0,bid1:bid1,ask1:ask1,lots:lots};
+  const ans=SOLVE["fx.short_roundtrip"](p);
+  const wrongDir=(ask0-bid1)*lots*100000*-1;
+  const mid=(((bid1+ask1)/2)-((bid0+ask0)/2))*lots*100000*-1;
+  return {kind:"number",dp:2,unit:"美元",answer:ans,
+    prompt:"EURUSD 入场 Bid "+f4(bid0)+" / Ask "+f4(ask0)+"，出场 Bid "+f4(bid1)+" / Ask "+f4(ask1)+"。\n你做空 "+lots+" 手，忽略佣金，净盈亏多少美元？",
+    assume:assume("空头：以 Bid 卖出、以 Ask 买回"),
+    explain:"空头入场收 Bid "+f4(bid0)+"，出场付 Ask "+f4(ask1)+"。\n("+f4(bid0)+" − "+f4(ask1)+") × "+lots+" × 100000 = "+money(ans)+"。",
+    causes:{[r2(wrongDir,2)]:"方向错",[r2(mid,2)]:"成本漏算"}};
+},
+
+"fx.spread_cost": r=>{
+  const pair=pick(r,["EURUSD","GBPUSD"]), lots=pick(r,[0.1,0.2,0.5,1.0]);
+  const spread=pick(r,[1.0,1.5,2.0]), p={spread:spread,lots:lots};
+  const ans=SOLVE["fx.spread_cost"](p);
+  return {kind:"number",dp:2,unit:"美元",answer:ans,
+    prompt:pair+" 点差 "+spread+" pip，你开了 "+lots+" 手。这笔仓位（"+lots+" 手）往返的点差成本是多少美元？（每标准手 1 pip = $10）",
+    assume:assume("点差成本 = 点差(pip) × 手数 × 每手点值"),
+    explain:spread+" × "+lots+" × $10 = "+money(ans)+"。",
+    causes:{[r2(spread*lots*100,2)]:"单位错"}};
+},
+
+"fx.equity": r=>{
+  const bal=pick(r,[500,1000,2000,5000]), fl=pick(r,[-200,-150,-80,60,120]);
+  const p={bal:bal,float:fl}, ans=SOLVE["fx.equity"](p);
+  return {kind:"number",dp:2,unit:"美元",answer:ans,
+    prompt:"账户余额 $"+bal+"，有一笔持仓当前浮亏/浮盈 "+(fl>0?"+":"")+fl+" 美元。当前净值是多少？",
+    assume:assume("净值 = 余额 + 浮动盈亏（未实现）"),
+    explain:bal+" + ("+fl+") = "+ans+"。净值随浮动盈亏实时变化。",
+    causes:{[bal]:"规则误解",[bal-fl]:"方向错"}};
+},
+
+"fx.margin_level": r=>{
+  const lots=pick(r,[0.1,0.2,0.5]), lev=pick(r,[100,200,500]), price=1.10;
+  const bal=pick(r,[500,1000,2000]), fl=-r2(rnd(r,20,80),2);
+  const p={lots:lots,lev:lev,price:price,bal:bal,float:fl};
+  const used=lots*100000*price/lev, ans=SOLVE["fx.margin_level"](p);
+  return {kind:"number",dp:0,unit:"%",answer:Math.round(ans),
+    prompt:"EUR/USD = "+price.toFixed(2)+"，你开了 "+lots+" 手，账户杠杆 1:"+lev+"。余额 $"+bal+"，当前浮亏 "+money(-fl)+"。\n保证金水平是多少 %？（保留整数）",
+    assume:assume("保证金水平 = 净值 ÷ 已用保证金 × 100%（已用保证金按入场名义价值算，本题内固定）"),
+    explain:"已用保证金 = "+lots+"×100000×"+price.toFixed(2)+" ÷ "+lev+" = "+money(used)+"；\n净值 = "+bal+" + ("+fl+") = "+money(bal+fl)+"；\n保证金水平 = 净值 ÷ 已用保证金 × 100% = "+(bal+fl).toFixed(2)+" ÷ "+used.toFixed(2)+" × 100% = "+ans.toFixed(1)+"% → "+Math.round(ans)+"%。"};
+},
+
+"fx.stopout": r=>{
+  const lots=pick(r,[0.1,0.2,0.5]), lev=pick(r,[100,200,500]), price=1.10;
+  const bal=pick(r,[500,1000,2000]), stop=pick(r,[50,40,30]);
+  const p={lots:lots,lev:lev,price:price,bal:bal,stop:stop};
+  const used=lots*100000*price/lev, allowed=bal-used*stop/100;
+  const pips=SOLVE["fx.stopout"](p);
+  return {kind:"number",dp:0,unit:"pip",answer:Math.round(pips),
+    prompt:"EUR/USD = "+price.toFixed(2)+"，"+lots+" 手多单，杠杆 1:"+lev+"，余额 $"+bal+"。\n经纪商规定保证金水平 "+stop+"% 强制平仓。价格还要往不利方向走多少 pip 才会触发？",
+    assume:assume("强制平仓线 "+stop+"%（题目给定）；初始浮盈亏为零；已用保证金固定；忽略点差/费用/滑点；算的是触发阈值，不是保证成交价"),
+    explain:"已用保证金 = "+lots+"×100000×"+price.toFixed(2)+" ÷ "+lev+" = "+money(used)+"。\n触发线净值 = "+stop+"% × "+used.toFixed(2)+" = "+money(used*stop/100)+"；\n可承受浮动亏损 = "+bal+" − "+(used*stop/100).toFixed(2)+" = "+money(allowed)+"。\n换算成 pip："+allowed.toFixed(2)+" ÷ ("+lots+"×10) = "+pips.toFixed(0)+" pip。\n注意：这是【触发位置】，真被强平时可能成交更差。",
+    causes:{[Math.round(allowed/(lots*10)*10)]:"单位错",[Math.round(bal/(lots*10))]:"规则误解"}};
+},
+
+"fx.eff_lev": r=>{
+  const lots=pick(r,[0.5,1.0,2.0]), lev=500, price=1.10;
+  const bal=pick(r,[500,1000,2000]), fl=-r2(rnd(r,0,100),2);
+  const p={lots:lots,lev:lev,price:price,bal:bal,float:fl};
+  const ans=SOLVE["fx.eff_lev"](p), notional=lots*100000*price;
+  return {kind:"number",dp:1,unit:"倍",answer:r2(ans,1),
+    prompt:"账户设置杠杆 1:"+lev+"。你开了 "+lots+" 手 EUR/USD（价格 "+price.toFixed(2)+"），余额 $"+bal+"，浮亏 "+money(-fl)+"。\n实际杠杆是多少倍？（保留 1 位小数）",
+    assume:assume("账户杠杆 ≠ 实际杠杆。实际杠杆 = 总名义价值 ÷ 净值"),
+    explain:"名义价值 = "+lots+"×100000×"+price.toFixed(2)+" = "+money(notional)+"；\n净值 = "+money(bal+fl)+"；\n实际杠杆 = "+notional.toFixed(0)+" ÷ "+(bal+fl).toFixed(2)+" = "+ans.toFixed(1)+" 倍。\n注意它和设置的 1:"+lev+" 是两件事。",
+    causes:{[lev]:"规则误解",[r2(notional/bal,1)]:"规则误解"}};
+}
+};
+
+/* ---------- 判分 ---------- */
+function grade(item,got){
+  if(item.kind==="choice") return got===item.answer;
+  if(!isFinite(got)) return false;
+  return r2(got,item.dp)===r2(item.answer,item.dp);
+}
+function diagnose(item,got){
+  if(item.kind==="choice") return "规则误解";
+  for(const k of Object.keys(item.causes||{})){
+    if(r2(parseFloat(k),item.dp)===r2(got,item.dp)) return item.causes[k];
+  }
+  return "计算错误";
+}
+function selfTest(){
+  const out={ok:0,bad:[]};
+  for(const k in GOLDEN){
+    const f=SOLVE[k];
+    if(!f){out.bad.push(k+" 缺公式");continue;}
+    for(const c of GOLDEN[k]){
+      const got=f(c.p), rel=Math.abs(got-c.a)/Math.max(1,Math.abs(c.a));
+      if(rel>1e-6) out.bad.push(k+": 期望 "+c.a+" 得到 "+got.toFixed(4)); else out.ok++;
+    }
+  }
+  return out;
+}
+
+/* ---------- 内置内容包（离线兜底） ---------- */
+const BUILTIN_PACKS=[{
+  id:"fx-basics", title:"FX 基础", builtin:true, version:1,
+  courses:[
+    {id:"m1",title:"M1 方向与相对强弱",desc:"买卖方向 · 两条腿 · 交叉汇率 · 美元敞口",units:[
+      {id:"direction",title:"买卖方向",template:"fx.direction"},
+      {id:"rotate",title:"两条腿",template:"fx.rotate"},
+      {id:"cross",title:"交叉汇率一致性",template:"fx.cross"},
+      {id:"exposure",title:"美元敞口",template:"fx.exposure"}]},
+    {id:"m2",title:"M2 Bid/Ask 与完整盈亏",desc:"双边报价 · 点差只算一次",units:[
+      {id:"long_rt",title:"多头往返",template:"fx.long_roundtrip"},
+      {id:"short_rt",title:"空头往返",template:"fx.short_roundtrip"},
+      {id:"spread",title:"点差成本",template:"fx.spread_cost"}]},
+    {id:"m3",title:"M3 账户动态与强平",desc:"净值 · 保证金水平 · 强平距离 · 实际杠杆",units:[
+      {id:"equity",title:"净值",template:"fx.equity"},
+      {id:"margin_level",title:"保证金水平",template:"fx.margin_level"},
+      {id:"stopout",title:"强平距离",template:"fx.stopout"},
+      {id:"eff_lev",title:"实际杠杆",template:"fx.eff_lev"}]}
+  ]
+}];
+
+if (typeof module !== "undefined" && module.exports){
+  module.exports={TEMPLATES:TEMPLATES,SOLVE:SOLVE,grade:grade,diagnose:diagnose,
+    selfTest:selfTest,RNG:RNG,legs:legs,BUILTIN_PACKS:BUILTIN_PACKS};
+}
+/* ==== CORE END ==== */
+</script>
+
+<script>
+/* ================= 引擎 ================= */
+const LS="fxapp.v2";
+const TODAY=function(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+const addDays=function(n){const d=new Date();d.setDate(d.getDate()+n);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+
+const Store={
+  data:{ packs:[], progress:{}, stats:{day:null,streak:0}, seed:(Date.now()>>>0) },
+  load(){ try{ const s=JSON.parse(localStorage.getItem(LS)); if(s) this.data=Object.assign(this.data,s); }catch(e){}
+          if(!this.data.packs) this.data.packs=[]; },
+  save(){ localStorage.setItem(LS, JSON.stringify(this.data)); },
+  addPack(p){ this.data.packs=(this.data.packs||[]).filter(function(x){return x.id!==p.id;}); this.data.packs.push(p); this.save(); },
+  delPack(id){ this.data.packs=(this.data.packs||[]).filter(function(x){return x.id!==id;}); this.save(); },
+  all(){ const imp=this.data.packs||[]; const out=[]; const seen={};
+         for(const p of BUILTIN_PACKS.concat(imp)){ if(!p||!p.courses||seen[p.id]) continue; seen[p.id]=1; out.push(p); }
+         return out; },
+  prog(key){ return this.data.progress[key]||(this.data.progress[key]={pass:0,fail:0,causes:{},due:null,streak:0}); },
+  touchDay(){
+    const t=TODAY(), s=this.data.stats||{day:null,streak:0};
+    if(s.day===t) return;
+    const y=new Date(); y.setDate(y.getDate()-1);
+    const ymd=y.getFullYear()+"-"+String(y.getMonth()+1).padStart(2,"0")+"-"+String(y.getDate()).padStart(2,"0");
+    s.streak=(s.day===ymd)?(s.streak||0)+1:1;
+    s.day=t; this.data.stats=s; this.save();
+  }
+};
+
+const UI={
+  rng:null, queue:[], idx:0, item:null, got:null, answered:false, buf:"",
+  curCourse:null, curUnit:null, mode:"course", roundOk:0,
+
+  boot(){
+    Store.load();
+    this.rng=RNG(Store.data.seed);
+    this.renderCatalog();
+    this.loadRemotePacks();
+    if("serviceWorker" in navigator && location.protocol.indexOf("http")===0)
+      navigator.serviceWorker.register("sw.js").catch(function(){});
+    const q=new URLSearchParams(location.search);
+    if(q.get("screen")==="stats") this.go("s-stats");
+    if(q.get("screen")==="packs") this.go("s-packs");
+    if(q.get("screen")==="course"&&q.get("pk")&&q.get("c")) this.openCourse(q.get("pk"),q.get("c"));
+  },
+  go(id){ document.querySelectorAll(".screen").forEach(function(e){e.classList.remove("on");});
+    document.getElementById(id).classList.add("on");
+    if(id==="s-catalog") UI.renderCatalog();
+    if(id==="s-stats") UI.renderStats();
+    if(id==="s-packs") UI.renderPacks();
+    window.scrollTo(0,0); },
+
+  loadRemotePacks(){
+    const self=this;
+    /* APK 用 file:// 打开时，相对 fetch 会被拦，改用线上绝对地址。
+       这样外壳可以离线，内容包仍然能联网更新。 */
+    const PACK_BASE = (location.protocol === "file:")
+      ? "https://zhangsixiang875-sudo.github.io/study/packs/"
+      : "packs/";
+    fetch(PACK_BASE+"index.json",{cache:"no-store"}).then(function(r){ return r.ok?r.json():null; })
+      .then(function(idx){
+        if(!idx||!idx.files) return;
+        return idx.files.reduce(function(p,f){
+          return p.then(function(){
+            return fetch(PACK_BASE+f,{cache:"no-store"}).then(function(rr){ return rr.ok?rr.json():null; })
+              .then(function(pk){ if(pk&&pk.id&&pk.courses){ pk.remote=true; Store.addPack(pk); } });
+          });
+        }, Promise.resolve()).then(function(){ self.renderCatalog(); });
+      }).catch(function(){});
+  },
+
+  /* ---------- 目录 ---------- */
+  renderCatalog(){
+    Store.touchDay();
+    const packs=Store.all();
+    const list=[];
+    for(const p of packs) for(const c of p.courses) list.push({pack:p,course:c});
+    let dueAll=0;
+    for(const x of list) dueAll+=this.courseDue(x.pack,x.course);
+    const st=Store.data.stats||{};
+    document.getElementById("catSub").textContent=
+      list.length+" 门课 · 连续 "+(st.streak||0)+" 天"+(dueAll?(" · "+dueAll+" 个待复习"):"");
+
+    document.getElementById("reviewCard").innerHTML=dueAll
+      ? '<div class="card tap" onclick="UI.startReview()"><div class="row"><div class="grow"><h3>复习 '+dueAll+' 个</h3><div class="meta">到期的考点，用新数字重测</div></div><span class="badge hot">开始</span></div></div>'
+      : '<div class="card"><div class="row"><div class="grow"><h3>今天没有复习</h3><div class="meta">答错的考点会在次日进入复习</div></div></div></div>';
+
+    const box=document.getElementById("courseList");
+    box.innerHTML="";
+    for(const x of list){
+      const key=x.pack.id+"/"+x.course.id;
+      const total=x.course.units.length;
+      let done=0;
+      for(const u of x.course.units){ if(Store.prog(key+"/"+u.id).pass>0) done++; }
+      const due=this.courseDue(x.pack,x.course);
+      const cls=due?"hot":(done===total?"done":"");
+      box.insertAdjacentHTML("beforeend",
+        '<div class="card tap" onclick="UI.openCourse(\''+x.pack.id+'\',\''+x.course.id+'\')">'
+        +'<div class="row"><div class="grow"><h3>'+x.course.title+'</h3>'
+        +'<div class="meta">'+(x.course.desc||"")+'</div></div>'
+        +'<span class="badge '+cls+'">'+(due?due+" 待复习":done+"/"+total)+'</span></div>'
+        +'<div class="bar"><i style="width:'+Math.round(done/total*100)+'%"></i></div></div>');
+    }
+    document.getElementById("packMeta").textContent=
+      packs.length+" 个内容包 · "+Store.data.packs.length+" 个导入";
+  },
+  courseDue(pack,course){
+    const key=pack.id+"/"+course.id;
+    let n=0;
+    for(const u of course.units){ const s=Store.prog(key+"/"+u.id); if(s.due&&s.due<=TODAY()) n++; }
+    return n;
+  },
+
+  /* ---------- 课程 ---------- */
+  openCourse(packId,courseId){
+    const pack=Store.all().find(function(p){return p.id===packId;});
+    if(!pack) return;
+    const course=pack.courses.find(function(c){return c.id===courseId;});
+    if(!course) return;
+    this.curCourse={pack:pack,course:course,key:packId+"/"+courseId};
+    document.getElementById("courseTitle").textContent=course.title;
+    document.getElementById("courseDesc").textContent=course.desc||"";
+    const self=this, key=this.curCourse.key;
+    document.getElementById("unitList").innerHTML=course.units.map(function(u){
+      const s=Store.prog(key+"/"+u.id);
+      let tag='<span class="tag">未开始</span>';
+      if(s.due&&s.due<=TODAY()) tag='<span class="tag hot">该复习</span>';
+      else if(s.due) tag='<span class="tag">'+s.due+'</span>';
+      else if(s.pass) tag='<span class="tag ok">已通过</span>';
+      return '<div class="unitrow tap" onclick="UI.startUnit(\''+u.id+'\')">'
+        +'<div class="grow"><div class="t">'+u.title+'</div>'
+        +'<div class="s mono">✓'+(s.pass||0)+' ✗'+(s.fail||0)+'</div></div>'+tag+'</div>';
+    }).join("");
+    this.go("s-course");
+  },
+  startCourse(){
+    const c=this.curCourse;
+    this.queue=c.course.units.map(function(u){return {unit:u,key:c.key+"/"+u.id};});
+    this.mode="course"; this.begin();
+  },
+  startUnit(unitId){
+    const c=this.curCourse;
+    const u=c.course.units.find(function(x){return x.id===unitId;});
+    this.queue=[{unit:u,key:c.key+"/"+u.id}];
+    this.mode="unit"; this.begin();
+  },
+
+  /* ---------- 复习 ---------- */
+  startReview(){
+    const q=[];
+    for(const p of Store.all()) for(const c of p.courses) for(const u of c.units){
+      const k=p.id+"/"+c.id+"/"+u.id, s=Store.data.progress[k];
+      if(s&&s.due&&s.due<=TODAY()) q.push({unit:u,key:k});
+    }
+    if(!q.length){ alert("今天没有到期复习。"); return; }
+    this.curCourse=null; this.queue=q; this.mode="review"; this.begin();
+  },
+
+  /* ---------- 做题 ---------- */
+  begin(){ this.idx=0; this.roundOk=0; this.go("s-quiz"); this.load(); },
+  buildItem(unit){
+    if(unit.template){
+      const fn=TEMPLATES[unit.template];
+      return fn?fn(this.rng):null;
+    }
+    if(unit.items&&unit.items.length){
+      const it=pick(this.rng,unit.items);
+      return {kind:(it.type==="choice")?"choice":"number",prompt:it.q,
+        options:it.options||[],answer:it.answer,dp:it.dp,unit:it.unit,
+        explain:it.explain||"",assume:it.assume||assume(""),causes:it.causes||{}};
+    }
+    return null;
+  },
+  load(){
+    const cell=this.queue[this.idx];
+    this.curUnit=cell;
+    this.item=this.buildItem(cell.unit);
+    this.answered=false; this.got=null; this.buf="";
+
+    document.getElementById("quizCount").textContent=(this.idx+1)+"/"+this.queue.length;
+    document.getElementById("quizBar").style.width=(this.idx/this.queue.length*100)+"%";
+    document.getElementById("quizCid").textContent=
+      (this.curCourse?this.curCourse.course.title+" · ":"")+cell.unit.title;
+
+    if(!this.item){
+      document.getElementById("quizPrompt").textContent="这个单元没有可用题目（检查内容包里 template 名是否正确）。";
+      document.getElementById("choiceArea").innerHTML="";
+      document.getElementById("numArea").style.display="none";
+      document.getElementById("submitBtn").disabled=true;
+      return;
+    }
+    document.getElementById("assumeBody").innerHTML=(this.item.assume||[]).map(function(kv){
+      return '<div class="kv"><span class="muted">'+kv[0]+'</span><b>'+kv[1]+'</b></div>';
+    }).join("");
+    document.getElementById("assumeBox").open=false;
+    document.getElementById("quizPrompt").textContent=this.item.prompt;
+
+    const ca=document.getElementById("choiceArea"), na=document.getElementById("numArea");
+    if(this.item.kind==="choice"){
+      ca.style.display="block"; na.style.display="none";
+      ca.innerHTML=this.item.options.map(function(o,i){
+        return '<div class="opt" id="opt'+i+'" onclick="UI.choose('+i+')"><span class="n">'+(i+1)+'</span><span>'+o+'</span></div>';
+      }).join("");
+      document.getElementById("submitBtn").disabled=true;
+    }else{
+      ca.style.display="none"; na.style.display="block";
+      document.getElementById("answerUnit").textContent="单位："+(this.item.unit||"");
+      this.paint();
+    }
+    document.getElementById("sheet").classList.remove("on");
+  },
+  choose(i){ if(this.answered) return; this.got=i;
+    document.querySelectorAll(".opt").forEach(function(e){e.classList.remove("sel");});
+    document.getElementById("opt"+i).classList.add("sel");
+    document.getElementById("submitBtn").disabled=false; },
+  key(k){ if(this.answered) return;
+    if(k==="back") this.buf=this.buf.slice(0,-1);
+    else if(k==="-") this.buf=(this.buf.charAt(0)==="-")?this.buf.slice(1):"-"+this.buf;
+    else if(k==="."){ if(this.buf.indexOf(".")<0) this.buf+=(this.buf===""||this.buf==="-")?"0.":"."; }
+    else this.buf+=k;
+    this.paint(); },
+  clear(){ this.buf=""; this.paint(); },
+  paint(){ const el=document.getElementById("answerBox");
+    if(this.buf===""){el.textContent="输入答案"; el.classList.add("empty");}
+    else {el.textContent=this.buf; el.classList.remove("empty");}
+    document.getElementById("submitBtn").disabled=(this.buf===""||this.buf==="-"); },
+  submit(){
+    if(this.answered||!this.item) return;
+    if(this.item.kind==="number") this.got=parseFloat(this.buf);
+    if(this.got===null||(this.item.kind==="number"&&!isFinite(this.got))) return;
+    this.answered=true;
+    const ok=grade(this.item,this.got);
+    const cause=ok?null:diagnose(this.item,this.got);
+    this.record(ok,cause);
+    if(ok) this.roundOk++;
+
+    if(this.item.kind==="choice"){
+      document.querySelectorAll(".opt").forEach(function(e){e.classList.remove("sel");});
+      document.getElementById("opt"+this.item.answer).classList.add("right");
+      if(!ok) document.getElementById("opt"+this.got).classList.add("wrong");
+    }
+    const fb=document.getElementById("fbBox");
+    fb.className="fb "+(ok?"ok":"bad");
+    document.getElementById("fbTitle").textContent=ok?"✓ 对":"✗ 错";
+    const ce=document.getElementById("fbCause");
+    if(cause){ce.style.display="inline-block"; ce.textContent="错因："+cause;}
+    else ce.style.display="none";
+    const s=Store.prog(this.curUnit.key);
+    document.getElementById("fbExp").textContent=(this.item.explain||"")+(s.due?("\n\n下次复习："+s.due):"");
+    document.getElementById("nextBtn").textContent=(this.idx+1>=this.queue.length)?"看结果":"下一题";
+    document.getElementById("sheet").classList.add("on");
+  },
+  record(ok,cause){
+    const s=Store.prog(this.curUnit.key);
+    if(ok){ s.pass++; s.streak=(s.streak||0)+1;
+      if(s.due) s.due=addDays(s.streak>=2?30:7);
+    }else{
+      s.fail++; s.streak=0;
+      if(cause) s.causes[cause]=(s.causes[cause]||0)+1;
+      s.due=addDays(1);
+    }
+    Store.save();
+  },
+  next(){ document.getElementById("sheet").classList.remove("on");
+    this.idx++;
+    if(this.idx>=this.queue.length){ this.finish(); return; }
+    setTimeout(function(){ UI.load(); },180); },
+  quit(){ if(this.answered||confirm("放弃本轮？")) this.go(this.curCourse?"s-course":"s-catalog"); },
+
+  finish(){
+    const n=this.queue.length, ok=this.roundOk, pct=Math.round(ok/n*100);
+    const circ=2*Math.PI*44;
+    document.getElementById("ringPct").textContent=pct+"%";
+    const fg=document.getElementById("ringFg");
+    fg.style.strokeDasharray=circ;
+    fg.style.strokeDashoffset=circ*(1-ok/n);
+    document.getElementById("doneTitle").textContent=(this.mode==="review")?"复习完成":"本轮完成";
+    document.getElementById("doneSub").textContent="答对 "+ok+" / "+n;
+    const causes={};
+    for(const c of this.queue){ const s=Store.prog(c.key);
+      for(const k in s.causes) causes[k]=(causes[k]||0)+s.causes[k]; }
+    const top=Object.keys(causes).sort(function(a,b){return causes[b]-causes[a];})[0];
+    document.getElementById("doneBody").innerHTML=top
+      ? '<div class="small muted">累计主要错因</div><div style="font-size:15px;margin-top:4px">'+top+'</div>'
+      : '<div class="small muted">记录已保存。</div>';
+    document.getElementById("againBtn").onclick=function(){ UI.begin(); };
+    this.go("s-done");
+  },
+
+  /* ---------- 记录 ---------- */
+  renderStats(){
+    let pass=0,fail=0,units=0,studied=0;
+    const rows=[];
+    for(const p of Store.all()) for(const c of p.courses) for(const u of c.units){
+      units++;
+      const s=Store.data.progress[p.id+"/"+c.id+"/"+u.id];
+      if(!s) continue;
+      pass+=s.pass||0; fail+=s.fail||0;
+      if(s.pass) studied++;
+      const cs=s.causes||{};
+      const top=Object.keys(cs).sort(function(a,b){return cs[b]-cs[a];})[0]||"";
+      let tag='<span class="tag">—</span>';
+      if(s.due&&s.due<=TODAY()) tag='<span class="tag hot">该复习</span>';
+      else if(s.due) tag='<span class="tag">下次 '+s.due+'</span>';
+      else if(s.pass) tag='<span class="tag ok">已通过</span>';
+      rows.push('<div class="unitrow"><div class="grow"><div class="t">'+u.title+'</div>'
+        +'<div class="s">'+(top?("主要错因："+top):"&nbsp;")+'</div></div>'
+        +'<div style="text-align:right">'+tag+'<div class="s mono">✓'+(s.pass||0)+' ✗'+(s.fail||0)+'</div></div></div>');
+    }
+    const acc=(pass+fail)?Math.round(pass/(pass+fail)*100):0;
+    const st=Store.data.stats||{};
+    document.getElementById("statsSummary").innerHTML=
+      '<div class="row"><div class="grow"><h3>正确率 '+acc+'%</h3>'
+      +'<div class="meta">'+(pass+fail)+' 题 · 覆盖 '+studied+'/'+units+' 个考点 · 连续 '+(st.streak||0)+' 天</div></div></div>'
+      +'<div class="bar"><i style="width:'+acc+'%"></i></div>';
+    document.getElementById("statsList").innerHTML=rows.join("")||'<div class="small muted">还没有记录。</div>';
+  },
+
+  /* ---------- 内容包 ---------- */
+  renderPacks(){
+    const imp=Store.data.packs||[];
+    let html=BUILTIN_PACKS.map(function(p){
+      return '<div class="unitrow"><div class="grow"><div class="t">'+p.title+'</div>'
+        +'<div class="s">内置 · '+p.courses.length+' 门课</div></div><span class="tag ok">已启用</span></div>';
+    }).join("");
+    for(const p of imp){
+      html+='<div class="unitrow"><div class="grow"><div class="t">'+(p.title||p.id)+'</div>'
+        +'<div class="s">'+(p.remote?"服务器":"导入")+' · '+(p.courses||[]).length+' 门课</div></div>'
+        +'<button class="btn ghost" style="width:auto;height:36px;padding:0 14px" onclick="UI.delPack(\''+p.id+'\')">删除</button></div>';
+    }
+    if(!imp.length) html+='<div class="unitrow"><div class="grow"><div class="s">还没有导入的内容包。</div></div></div>';
+    document.getElementById("packList").innerHTML=html;
+  },
+  importPack(inp){
+    const f=inp.files[0]; if(!f) return;
+    const rd=new FileReader();
+    rd.onload=function(){
+      try{
+        const p=JSON.parse(rd.result);
+        if(!p.id||!p.courses) throw new Error("缺少 id 或 courses");
+        Store.addPack(p); UI.renderPacks(); UI.renderCatalog();
+        alert("已导入「"+(p.title||p.id)+"」");
+      }catch(e){ alert("内容包格式不对："+e.message); }
+      inp.value="";
+    };
+    rd.readAsText(f);
+  },
+  delPack(id){ if(!confirm("删除这个内容包？进度记录会保留。")) return; Store.delPack(id); this.renderPacks(); this.renderCatalog(); },
+  exportAll(){
+    const blob=new Blob([JSON.stringify(Store.data,null,2)],{type:"application/json"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob); a.download="study-progress-"+TODAY()+".json"; a.click();
+  },
+  selfTest(){
+    const out=selfTest(), el=document.getElementById("stOut");
+    if(!out.bad.length){ el.style.color="var(--ok)"; el.textContent="通过 "+out.ok+" 组，公式与 Python 一致。"; }
+    else { el.style.color="var(--bad)"; el.textContent="不一致：\n"+out.bad.slice(0,6).join("\n"); }
+  }
+};
+
+UI.boot();
+</script>
+</body>
+</html>
